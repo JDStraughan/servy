@@ -38,21 +38,21 @@ defmodule Servy.Handler do
 
   def log(conv), do: IO.inspect conv
 
-  def route(conv), do: route(conv, conv.method, conv.path)
+  # def route(conv), do: route(conv, conv.method, conv.path)
 
-  def route(conv, "GET", "/wildthings") do
+  def route(%{method: "GET", path: "/wildthings" } = conv) do
     %{ conv | status: 200, resp_body: "All the things"}
   end
 
-  def route(conv, "GET", "/bears") do
+  def route(%{method: "GET", path: "/bears" } = conv) do
     %{ conv | status: 200, resp_body: "Da Bears"}
   end
 
-  def route(conv, "GET", "/bears/" <> id) do
+  def route(%{method: "GET", path: "/bears/" <> id } = conv) do
     %{ conv | status: 200, resp_body: "Bears ##{id}"}
   end
 
-  def route(conv, _method, path) do
+  def route(%{ path: path} = conv) do
     %{conv | status: 404, resp_body: "404: No #{path} found"}
   end
 
