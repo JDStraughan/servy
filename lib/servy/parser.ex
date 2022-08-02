@@ -2,9 +2,28 @@ defmodule Servy.Parser do
 
   alias Servy.Conv
 
+  @doc ~S"""
+  Parses a request string into a struct with all the necessary key/value pairs
+
+  ## Example
+    iex> request = "GET /wildthings HTTP/1.1\r\nHost: example.com\r\nUser-Agent: ExampleBrowser/1.0\r\nAccept: */*\r\n\r\n"
+    iex> Servy.Parser.parse(request)
+    %Servy.Conv{
+      headers: %{
+        "Accept" => "*/*",
+        "Host" => "example.com",
+        "User-Agent" => "ExampleBrowser/1.0"
+      },
+      method: "GET",
+      params: %{},
+      path: "/wildthings",
+      resp_body: "",
+      status: nil
+    }
+  """
   def parse(request) do
-    [top, params_string] = String.split(request, "\n\n")
-    [request_line | header_lines ] = String.split(top, "\n")
+    [top, params_string] = String.split(request, "\r\n\r\n")
+    [request_line | header_lines ] = String.split(top, "\r\n")
     [method, path, _] = String.split(request_line, " ")
 
     headers = parse_headers(header_lines, %{})
@@ -18,12 +37,35 @@ defmodule Servy.Parser do
     }
   end
 
+  @doc """
+  Parses the params string `key1=value1&key2..` into
+  a map with keys/values
+
+  ## Examples
+    iex> params_string = "name=Baloo&type=Brown"
+    iex> Servy.Parser.parse_params("application/x-www-form-urlencoded", params_string)
+    %{"name" => "Baloo", "type" => "Brown"}
+    iex> Servy.Parser.parse_params("multipart/form-data", params_string)
+    %{}
+  """
   def parse_params("application/x-www-form-urlencoded", params_string) do
     params_string |> String.trim |> URI.decode_query
   end
 
   def parse_params(_, _), do: %{}
 
+  @doc """
+  Parse a list of headers into a map of kv pairs
+
+  ## Example
+    iex> header_lines = ["Host: example.com", "User-Agent: ExampleBrowser/1.0", "Accept: */*"]
+    iex> Servy.Parser.parse_headers(header_lines, %{})
+    %{
+    "Accept" => "*/*",
+    "Host" => "example.com",
+    "User-Agent" => "ExampleBrowser/1.0"
+    }
+  """
   def parse_headers([head | tail], headers) do
     [key, value] = String.split(head, ": ")
     headers = Map.put(headers, key, value)
